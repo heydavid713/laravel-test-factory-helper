@@ -7,7 +7,6 @@ use Mpociot\LaravelTestFactoryHelper\Console\GenerateCommand;
 
 class TestFactoryHelperServiceProvider extends ServiceProvider
 {
-
     /**
      * Indicates if loading of the provider is deferred.
      *
@@ -49,7 +48,6 @@ class TestFactoryHelperServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return array('command.test-factory-helper.generate');
+        return ['command.test-factory-helper.generate'];
     }
-
 }
