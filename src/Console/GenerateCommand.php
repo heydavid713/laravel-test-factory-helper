@@ -4,17 +4,16 @@ namespace Mpociot\LaravelTestFactoryHelper\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\ClassLoader\ClassMapGenerator;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateCommand extends Command
 {
     /**
-     * @var Filesystem $files
+     * @var Filesystem
      */
     protected $files;
 
@@ -53,12 +52,12 @@ class GenerateCommand extends Command
     /**
      * @var array
      */
-    protected $properties = array();
+    protected $properties = [];
 
     /**
      * @var array
      */
-    protected $dirs = array();
+    protected $dirs = [];
 
     /**
      * @var
@@ -98,12 +97,11 @@ class GenerateCommand extends Command
 
         $written = $this->files->put('database/factories/ModelFactory.php', $result);
         if ($written !== false) {
-            $this->info("Model factories were written successfully to ".$filename);
+            $this->info('Model factories were written successfully to '.$filename);
         } else {
-            $this->error("Failed to write model factories to ".$filename);
+            $this->error('Failed to write model factories to '.$filename);
         }
     }
-
 
     /**
      * Get the console command arguments.
@@ -112,9 +110,9 @@ class GenerateCommand extends Command
      */
     protected function getArguments()
     {
-        return array(
-            array('model', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Which models to include', array()),
-        );
+        return [
+            ['model', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Which models to include', []],
+        ];
     }
 
     /**
@@ -124,21 +122,20 @@ class GenerateCommand extends Command
      */
     protected function getOptions()
     {
-        return array(
-            array('filename', 'F', InputOption::VALUE_OPTIONAL, 'The path to the model factory file', $this->filename),
-            array('dir', 'D', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The model dir', array($this->dir)),
-            array('reset', 'R', InputOption::VALUE_NONE, 'Remove the original ModelFactory instead of appending'),
-            array('ignore', 'I', InputOption::VALUE_OPTIONAL, 'Which models to ignore', ''),
-        );
+        return [
+            ['filename', 'F', InputOption::VALUE_OPTIONAL, 'The path to the model factory file', $this->filename],
+            ['dir', 'D', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The model dir', [$this->dir]],
+            ['reset', 'R', InputOption::VALUE_NONE, 'Remove the original ModelFactory instead of appending'],
+            ['ignore', 'I', InputOption::VALUE_OPTIONAL, 'Which models to ignore', ''],
+        ];
     }
 
     protected function generateFactories($loadModels, $ignore = '')
     {
-
         if (empty($loadModels)) {
             $models = $this->loadModels();
         } else {
-            $models = array();
+            $models = [];
             foreach ($loadModels as $model) {
                 $models = array_merge($models, explode(',', $model));
             }
@@ -155,7 +152,7 @@ class GenerateCommand extends Command
                 continue;
             }
 
-            $this->properties = array();
+            $this->properties = [];
             if (class_exists($name)) {
                 try {
                     // handle abstract classes, interfaces, ...
@@ -165,7 +162,7 @@ class GenerateCommand extends Command
                         continue;
                     }
 
-                    if (!$this->reset && preg_match("/\\\$factory->define\((.*?)".preg_quote($reflectionClass->getName())."::class(.*?),/", $this->existingFactories)) {
+                    if (!$this->reset && preg_match("/\\\$factory->define\((.*?)".preg_quote($reflectionClass->getName()).'::class(.*?),/', $this->existingFactories)) {
                         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                             $this->error("Model '$name' already has a factory");
                         }
@@ -188,26 +185,26 @@ class GenerateCommand extends Command
                     $output .= $this->createFactory($name);
                     $ignore[] = $name;
                 } catch (\Exception $e) {
-                    $this->error("Exception: " . $e->getMessage() . "\nCould not analyze class $name.");
+                    $this->error('Exception: '.$e->getMessage()."\nCould not analyze class $name.");
                 }
             }
-
         }
+
         return $output;
     }
 
-
     protected function loadModels()
     {
-        $models = array();
+        $models = [];
         foreach ($this->dirs as $dir) {
-            $dir = base_path() . '/' . $dir;
+            $dir = base_path().'/'.$dir;
             if (file_exists($dir)) {
                 foreach (ClassMapGenerator::createMap($dir) as $model => $path) {
                     $models[] = $model;
                 }
             }
         }
+
         return $models;
     }
 
@@ -218,13 +215,13 @@ class GenerateCommand extends Command
      */
     protected function getPropertiesFromTable($model)
     {
-        $table = $model->getConnection()->getTablePrefix() . $model->getTable();
+        $table = $model->getConnection()->getTablePrefix().$model->getTable();
         $schema = $model->getConnection()->getDoctrineSchemaManager($table);
         $databasePlatform = $schema->getDatabasePlatform();
         $databasePlatform->registerDoctrineTypeMapping('enum', 'string');
 
         $platformName = $databasePlatform->getName();
-        $customTypes = $this->laravel['config']->get("ide-helper.custom_db_types.{$platformName}", array());
+        $customTypes = $this->laravel['config']->get("ide-helper.custom_db_types.{$platformName}", []);
         foreach ($customTypes as $yourTypeName => $doctrineTypeName) {
             $databasePlatform->registerDoctrineTypeMapping($yourTypeName, $doctrineTypeName);
         }
@@ -255,13 +252,13 @@ class GenerateCommand extends Command
     }
 
     /**
-     * @param string $name
+     * @param string      $name
      * @param string|null $type
      */
     protected function setProperty($name, $type = null)
     {
         if (!isset($this->properties[$name])) {
-            $this->properties[$name] = array();
+            $this->properties[$name] = [];
             $this->properties[$name]['type'] = 'mixed';
             $this->properties[$name]['faker'] = false;
         }
@@ -270,44 +267,44 @@ class GenerateCommand extends Command
         }
 
         $fakeableTypes = [
-            'string' => '$faker->word',
-            'text' => '$faker->text',
-            'date' => '$faker->date()',
-            'time' => '$faker->time()',
-            'guid' => '$faker->word',
+            'string'     => '$faker->word',
+            'text'       => '$faker->text',
+            'date'       => '$faker->date()',
+            'time'       => '$faker->time()',
+            'guid'       => '$faker->word',
             'datetimetz' => '$faker->dateTimeBetween()',
-            'datetime' => '$faker->dateTimeBetween()',
-            'integer' => '$faker->randomNumber()',
-            'bigint' => '$faker->randomNumber()',
-            'smallint' => '$faker->randomNumber()',
-            'decimal' => '$faker->randomFloat()',
-            'float' => '$faker->randomFloat()',
-            'boolean' => '$faker->boolean'
+            'datetime'   => '$faker->dateTimeBetween()',
+            'integer'    => '$faker->randomNumber()',
+            'bigint'     => '$faker->randomNumber()',
+            'smallint'   => '$faker->randomNumber()',
+            'decimal'    => '$faker->randomFloat()',
+            'float'      => '$faker->randomFloat()',
+            'boolean'    => '$faker->boolean',
         ];
 
         $fakeableNames = [
-            'name' => '$faker->name',
-            'firstname' => '$faker->firstName',
-            'first_name' => '$faker->firstName',
-            'lastname' => '$faker->lastName',
-            'last_name' => '$faker->lastName',
-            'street' => '$faker->streetName',
-            'zip' => '$faker->postcode',
-            'postcode' => '$faker->postcode',
-            'city' => '$faker->city',
-            'country' => '$faker->country',
-            'latitude' => '$faker->latitude',
-            'lat' => '$faker->latitude',
-            'longitude' => '$faker->longitude',
-            'lng' => '$faker->longitude',
-            'phone' => '$faker->phoneNumber',
-            'phone_numer' => '$faker->phoneNumber',
-            'company' => '$faker->company',
-            'email' => '$faker->safeEmail',
-            'username' => '$faker->userName',
-            'user_name' => '$faker->userName',
-            'password' => 'bcrypt($faker->password)',
-            'url' => '$faker->url',
+            'name'           => '$faker->name',
+            'firstname'      => '$faker->firstName',
+            'first_name'     => '$faker->firstName',
+            'lastname'       => '$faker->lastName',
+            'last_name'      => '$faker->lastName',
+            'street'         => '$faker->streetName',
+            'zip'            => '$faker->postcode',
+            'postcode'       => '$faker->postcode',
+            'city'           => '$faker->city',
+            'country'        => '$faker->country',
+            'latitude'       => '$faker->latitude',
+            'lat'            => '$faker->latitude',
+            'longitude'      => '$faker->longitude',
+            'lng'            => '$faker->longitude',
+            'phone'          => '$faker->phoneNumber',
+            'phone_numer'    => '$faker->phoneNumber',
+            'company'        => '$faker->company',
+            'email'          => '$faker->safeEmail',
+            'username'       => '$faker->userName',
+            'user_name'      => '$faker->userName',
+            'password'       => 'bcrypt($faker->password)',
+            'url'            => '$faker->url',
             'remember_token' => 'str_random(10)',
         ];
 
@@ -322,9 +319,9 @@ class GenerateCommand extends Command
         }
     }
 
-
     /**
      * @param string $class
+     *
      * @return string
      */
     protected function createFactory($class)
@@ -338,5 +335,4 @@ class GenerateCommand extends Command
 
         return $content;
     }
-
 }
